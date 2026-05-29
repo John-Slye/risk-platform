@@ -1,0 +1,29 @@
+[project]
+name = "risk-platform"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "arch>=8.0.0",
+    "fastapi>=0.136.3",
+    "numpy>=2.4.6",
+    "optbinning>=0.21.0",
+    "pandas>=3.0.3",
+    "plotly>=6.7.0",
+    "pydantic>=2.13.4",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.17.1",
+    "sqlalchemy>=2.0.50",
+    "statsmodels>=0.14.6",
+    "streamlit>=1.58.0",
+    "uvicorn>=0.48.0",
+    "xgboost>=3.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "black>=26.5.1",
+    "pytest>=9.0.3",
+    "ruff>=0.15.15",
+]
