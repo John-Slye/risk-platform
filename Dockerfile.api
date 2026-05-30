@@ -1,0 +1,30 @@
+# --- Stage: build dependencies + project into a venv ----------------------
+FROM python:3.12-slim AS builder
+
+# uv: fast, single-binary Python package manager. Install via the official image.
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+WORKDIR /app
+
+# Copy lockfile + project metadata first so Docker caches the dep install layer.
+COPY pyproject.toml uv.lock README.md ./
+COPY src ./src
+
+# Install into a project-local .venv (the default for uv sync).
+# --frozen ensures the lockfile is honored exactly.
+RUN uv sync --frozen --no-dev
+
+# --- Stage: runtime image -------------------------------------------------
+FROM python:3.12-slim
+WORKDIR /app
+
+# Bring the built venv + source over.
+COPY --from=builder /app /app
+
+# uvicorn must be on PATH via the venv.
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8000
+
+CMD ["uvicorn", "risk_platform.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

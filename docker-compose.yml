@@ -1,0 +1,36 @@
+# docker compose up        -> builds both images and starts both containers
+# docker compose down      -> stops + removes them
+# docker compose logs -f   -> follow logs
+# Browser:  http://localhost:8000/docs  (API Swagger UI)
+#           http://localhost:8501       (Streamlit dashboard)
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: risk-platform-api:latest
+    container_name: risk-platform-api
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status == 200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    image: risk-platform-dashboard:latest
+    container_name: risk-platform-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      # Inside the docker compose network, services reach each other by name.
+      - API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy

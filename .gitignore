@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# uv / virtual envs
+.venv/
+venv/
+env/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Data (gitignored — never commit datasets to a public repo)
+data/raw/
+data/processed/
+data/*.csv
+data/*.parquet
+*.zip
+
+# Model artifacts
+models/*.pkl
+models/*.joblib
+models/*.cbm
+models/*.json
+
+# Reports / large outputs
+report.pdf
+*.html
+notebooks/*-executed.ipynb
+
+# Build / distribution
+build/
+dist/
+
+# Docker
+*.dockerignore.tmp
