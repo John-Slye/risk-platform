@@ -82,8 +82,8 @@ def portfolio_expected_loss(
 
     els = pds * lgds * eads
     rwas = np.array(
-        [basel_rwa(p, l, e, maturity_years=m)["RWA"]
-         for p, l, e, m in zip(pds, lgds, eads, terms)]
+        [basel_rwa(p, lg, e, maturity_years=m)["RWA"]
+         for p, lg, e, m in zip(pds, lgds, eads, terms)]
     )
 
     per_loan = loans[[ead_col]].copy()
