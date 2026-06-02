@@ -1,6 +1,6 @@
-"""Market risk: VaR / ES across Historical, Parametric, MC, FHS.
+"""Market risk: VaR / ES across Historical, Parametric, MC, FHS, EVT.
 
-Phase 0 ships stubs. Phase 4 imports the real modules from Project 1.
+Ported from the standalone portfolio_var_project in Phase 4.
 """
 
 from .market_risk import MarketRisk

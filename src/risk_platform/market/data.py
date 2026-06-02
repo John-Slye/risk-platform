@@ -7,7 +7,7 @@ The single entry point most callers want is `load_returns()` which:
 
 Example
 -------
->>> from portfolio_var.data import load_returns, DEFAULT_TICKERS, DEFAULT_WEIGHTS
+>>> from risk_platform.market.data import load_returns, DEFAULT_TICKERS, DEFAULT_WEIGHTS
 >>> returns = load_returns()
 >>> port = returns @ DEFAULT_WEIGHTS
 """
@@ -42,10 +42,10 @@ DEFAULT_WEIGHTS: pd.Series = pd.Series(
     {t: 1.0 / len(DEFAULT_TICKERS) for t in DEFAULT_TICKERS}
 )
 
-# Project root = two levels above this file: src/portfolio_var/data.py -> project root
-PROJECT_ROOT: Path = Path(__file__).resolve().parents[2]
-DATA_DIR: Path = PROJECT_ROOT / "data"
-DATA_DIR.mkdir(exist_ok=True)
+# Project root: src/risk_platform/market/data.py -> three parents up.
+PROJECT_ROOT: Path = Path(__file__).resolve().parents[3]
+DATA_DIR: Path = PROJECT_ROOT / "data" / "market"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 DEFAULT_CACHE: Path = DATA_DIR / "prices.parquet"
 
 
