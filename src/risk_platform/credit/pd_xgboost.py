@@ -31,6 +31,8 @@ class XGBoostPD:
     categorical_features: list[str] = field(default_factory=list)
     model: xgb.XGBClassifier | None = None
     feature_cols: list[str] = field(default_factory=list)
+    # Frozen train-time category vocab; unseen predict-time values map to NaN.
+    _categories: dict[str, list] = field(default_factory=dict)
 
     # Scorecard-style PDO scoring (so we can produce a 600-style score too)
     base_score: float = 600.0
@@ -38,11 +40,18 @@ class XGBoostPD:
     pdo: float = 20.0
 
     # ----------------------------------------------------------------------
-    def _prepare(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Cast categoricals to pandas Categorical for XGBoost's native handling."""
+    def _prepare(self, X: pd.DataFrame, *, fit: bool = False) -> pd.DataFrame:
+        """Cast categoricals using the train-time vocabulary."""
         X = X[self.feature_cols].copy()
         for col in self.categorical_features:
-            if col in X.columns:
+            if col not in X.columns:
+                continue
+            if fit:
+                self._categories[col] = list(X[col].astype("category").cat.categories)
+            cats = self._categories.get(col)
+            if cats is not None:
+                X[col] = pd.Categorical(X[col], categories=cats)
+            else:
                 X[col] = X[col].astype("category")
         return X
 
@@ -84,7 +93,8 @@ class XGBoostPD:
             default_params.update(params)
 
         self.model = xgb.XGBClassifier(**{k: v for k, v in default_params.items() if v is not None})
-        Xp = self._prepare(X)
+        # Prepare train first with fit=True so the categorical vocab is frozen.
+        Xp = self._prepare(X, fit=True)
         eval_set = None
         if X_val is not None and y_val is not None:
             eval_set = [(self._prepare(X_val), y_val)]

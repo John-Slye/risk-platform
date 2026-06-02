@@ -15,11 +15,12 @@ from fastapi import APIRouter, Query
 from risk_platform.api.schemas import (
     ExpectedLossResponse, LGDResponse, LoanFeatures, PDRequest, PDResponse,
 )
-from risk_platform.credit import LGDModel, basel_rwa, expected_loss
+from risk_platform.credit import basel_rwa, expected_loss
+from risk_platform.credit.lgd_model import LGDModel
 # Stubs (Phase 0)
 from risk_platform.credit.pd_models import ScorecardPD as StubScorecard
 from risk_platform.credit.pd_models import XGBoostPD as StubXGBoost
-# Real, trained models (Phase 1)
+# Real, trained models (Phases 1 and 2)
 from risk_platform.credit.pd_scorecard import ScorecardPD as RealScorecard
 from risk_platform.credit.pd_xgboost import XGBoostPD as RealXGBoost
 
@@ -28,6 +29,7 @@ from risk_platform.credit.pd_xgboost import XGBoostPD as RealXGBoost
 _MODELS_DIR = Path(__file__).resolve().parents[4] / "models"
 _SC_PATH = _MODELS_DIR / "pd_scorecard.pkl"
 _XG_PATH = _MODELS_DIR / "pd_xgboost.pkl"
+_LGD_PATH = _MODELS_DIR / "pd_lgd.pkl"
 
 
 def _load_scorecard():
@@ -42,10 +44,16 @@ def _load_xgboost():
     return StubXGBoost()
 
 
+def _load_lgd():
+    if _LGD_PATH.exists():
+        return LGDModel.load(_LGD_PATH)
+    return LGDModel()  # un-fitted; returns hardcoded stub LGD
+
+
 # Singletons (loaded once at process start).
 _scorecard = _load_scorecard()
 _xgboost = _load_xgboost()
-_lgd = LGDModel()
+_lgd = _load_lgd()
 
 
 router = APIRouter(prefix="/credit", tags=["credit"])

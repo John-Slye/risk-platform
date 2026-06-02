@@ -72,11 +72,14 @@ CATEGORICAL_FEATURES: list[str] = [
 # Metadata columns we need but not as model features.
 META_COLUMNS: list[str] = ["loan_status", "issue_d", "id"]
 
-# Raw columns read from CSV (a few we need only to build `fico`, then drop).
+# Raw columns read from CSV (a few we need only to build derived features).
+# `recoveries` + `funded_amnt` are used to construct realized LGD.
 _RAW_ONLY: list[str] = ["fico_range_low", "fico_range_high"]
+_LGD_RAW: list[str] = ["recoveries", "funded_amnt"]
 KEEP_COLUMNS: list[str] = (
     [c for c in NUMERIC_FEATURES if c != "fico"]
     + _RAW_ONLY
+    + _LGD_RAW
     + CATEGORICAL_FEATURES
     + META_COLUMNS
 )
@@ -148,12 +151,21 @@ def prepare(raw: pd.DataFrame) -> pd.DataFrame:
     df["fico"] = (df["fico_range_low"] + df["fico_range_high"]) / 2.0
     df = df.drop(columns=_RAW_ONLY)
 
-    # Target
+    # PD target
     df["default"] = df["loan_status"].isin(DEFAULT_STATUSES).astype(int)
+
+    # LGD target: realized loss-given-default, only defined for defaulted loans.
+    # LGD = 1 - (recoveries / funded_amount), clipped to [0, 1].
+    df["recoveries"] = pd.to_numeric(df["recoveries"], errors="coerce").fillna(0.0)
+    df["funded_amnt"] = pd.to_numeric(df["funded_amnt"], errors="coerce")
+    realized_lgd = 1.0 - (df["recoveries"] / df["funded_amnt"]).clip(lower=0.0, upper=1.0)
+    df["realized_lgd"] = np.where(df["default"] == 1, realized_lgd, np.nan)
+    df = df.drop(columns=_LGD_RAW)
 
     # Final column ordering
     feature_cols = NUMERIC_FEATURES + CATEGORICAL_FEATURES
-    return df[feature_cols + ["default", "issue_d", "vintage_year", "id"]].reset_index(drop=True)
+    return df[feature_cols + ["default", "realized_lgd",
+                              "issue_d", "vintage_year", "id"]].reset_index(drop=True)
 
 
 def save_processed(df: pd.DataFrame, path: Path = PROCESSED_PARQUET) -> None:
@@ -214,3 +226,11 @@ if __name__ == "__main__":
         f"  Test  (2018)   : {len(test):>9,}  "
         f"default {test['default'].mean()*100:.2f}%"
     )
+
+    print("\nRealized LGD on defaulted loans:")
+    lgd_only = df.loc[df["default"] == 1, "realized_lgd"]
+    print(f"  n            : {len(lgd_only):,}")
+    print(f"  mean         : {lgd_only.mean():.3f}")
+    print(f"  median       : {lgd_only.median():.3f}")
+    print(f"  % at 0       : {(lgd_only <= 0.01).mean()*100:.1f}%")
+    print(f"  % at 1       : {(lgd_only >= 0.99).mean()*100:.1f}%")
