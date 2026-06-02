@@ -1,4 +1,7 @@
-"""Loan-level credit risk page: PD, LGD, Expected Loss, Basel RWA."""
+"""Loan-level credit risk page: PD, LGD, Expected Loss, Basel RWA.
+
+Field names match the LendingClub schema used to train the PD models.
+"""
 
 from __future__ import annotations
 
@@ -10,32 +13,56 @@ import streamlit as st
 
 API_URL = os.environ.get("API_URL", "http://localhost:8000")
 
-st.title("Credit Risk — Loan-Level PD / LGD / EL")
-st.caption("Phase 0 stub returns hardcoded model outputs. Phase 1 replaces with real PD models.")
+st.title("Credit Risk - Loan-Level PD / LGD / EL")
+st.caption("Phase 1 ships real PD models (WOE scorecard + XGBoost) trained on LendingClub.")
 
 with st.form("loan_form"):
+    st.subheader("Required (highest-IV features)")
     c1, c2, c3 = st.columns(3)
-    annual_income  = c1.number_input("Annual income ($)",  min_value=1_000, value=80_000)
-    loan_amount    = c2.number_input("Loan amount ($)",    min_value=500,   value=15_000)
-    interest_rate  = c3.number_input("Interest rate",      min_value=0.01,  max_value=0.99, value=0.105, step=0.005)
+    loan_amnt   = c1.number_input("Loan amount ($)",     min_value=500,   value=15_000)
+    int_rate    = c2.number_input("Interest rate (%)",   min_value=1.0,   max_value=50.0, value=10.5, step=0.25)
+    term        = c3.selectbox("Term", ["36 months", "60 months"], index=0)
+
     c4, c5, c6 = st.columns(3)
-    term_months    = c4.selectbox("Term (months)", [36, 60], index=0)
-    fico           = c5.slider("FICO", 300, 850, 700)
-    dti            = c6.number_input("DTI",        min_value=0.0,  max_value=0.99, value=0.18, step=0.01)
-    c7, c8, c9 = st.columns(3)
-    purpose        = c7.selectbox("Purpose", ["debt_consolidation", "credit_card", "home_improvement", "other"])
-    home_ownership = c8.selectbox("Home", ["RENT", "MORTGAGE", "OWN"])
-    pd_model       = c9.selectbox("PD Model", ["scorecard", "xgboost"])
+    annual_inc  = c4.number_input("Annual income ($)",   min_value=1_000, value=80_000)
+    fico        = c5.slider("FICO", 300, 850, 700)
+    dti         = c6.number_input("DTI (%)",             min_value=0.0,   max_value=99.0, value=18.0, step=0.5)
+
+    with st.expander("Optional features (sensible defaults)"):
+        c7, c8, c9 = st.columns(3)
+        delinq_2yrs        = c7.number_input("Delinquencies 2yrs", value=0, min_value=0)
+        inq_last_6mths     = c8.number_input("Inquiries last 6mo", value=0, min_value=0)
+        open_acc           = c9.number_input("Open accounts",      value=8, min_value=0)
+        c10, c11, c12 = st.columns(3)
+        revol_util         = c10.number_input("Revol. utilization (%)", value=40.0, min_value=0.0, max_value=200.0)
+        mort_acc           = c11.number_input("Mortgage accounts", value=0, min_value=0)
+        emp_length         = c12.selectbox("Employment length", [
+            "< 1 year", "1 year", "2 years", "3 years", "4 years", "5 years",
+            "6 years", "7 years", "8 years", "9 years", "10+ years"], index=5)
+        c13, c14, c15 = st.columns(3)
+        home_ownership     = c13.selectbox("Home", ["RENT", "MORTGAGE", "OWN"], index=0)
+        verification_status = c14.selectbox("Verification",
+            ["Verified", "Source Verified", "Not Verified"], index=0)
+        purpose            = c15.selectbox("Purpose", [
+            "debt_consolidation", "credit_card", "home_improvement",
+            "major_purchase", "small_business", "other"], index=0)
+
+    pd_model = st.selectbox("PD Model", ["scorecard", "xgboost"], index=0)
     submitted = st.form_submit_button("Compute Expected Loss")
 
 if submitted:
-    loan = dict(annual_income=annual_income, loan_amount=loan_amount,
-                interest_rate=interest_rate, term_months=term_months,
-                fico=fico, dti=dti, purpose=purpose, home_ownership=home_ownership)
+    loan = dict(
+        loan_amnt=loan_amnt, int_rate=int_rate, term=term,
+        annual_inc=annual_inc, fico=fico, dti=dti,
+        delinq_2yrs=delinq_2yrs, inq_last_6mths=inq_last_6mths,
+        open_acc=open_acc, revol_util=revol_util, mort_acc=mort_acc,
+        emp_length=emp_length, home_ownership=home_ownership,
+        verification_status=verification_status, purpose=purpose,
+    )
     try:
         r = requests.post(
             f"{API_URL}/credit/expected_loss?pd_model={pd_model}",
-            json=loan, timeout=5,
+            json=loan, timeout=10,
         )
         r.raise_for_status()
         out = r.json()
@@ -44,7 +71,7 @@ if submitted:
         c2.metric("LGD", f"{out['lgd']*100:.1f}%")
         c3.metric("Expected Loss ($)", f"{out['expected_loss']:,.0f}")
         c4.metric("Basel RWA ($)",     f"{out['rwa']:,.0f}")
-        st.caption(f"K (capital / EAD): {out['K']*100:.2f}%")
+        st.caption(f"Basel K (capital / EAD): {out['K']*100:.2f}%")
         st.json(out["model_versions"])
     except Exception as exc:
         st.error(f"Request failed: {exc}")

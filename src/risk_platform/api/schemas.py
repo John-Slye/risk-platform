@@ -43,15 +43,52 @@ class MarketStressResponse(BaseModel):
 
 # ---------- Credit risk -----------------------------------------------------
 class LoanFeatures(BaseModel):
-    """Single loan's features for PD/LGD inference."""
-    annual_income: float = Field(gt=0, description="USD")
-    loan_amount: float = Field(gt=0, description="USD")
-    interest_rate: float = Field(gt=0, lt=1, description="Decimal, e.g. 0.10")
-    term_months: int = Field(gt=0)
-    fico: int = Field(ge=300, le=850)
-    dti: float = Field(ge=0, lt=1, description="Debt-to-income ratio (decimal)")
-    purpose: str = Field(default="debt_consolidation")
+    """Single loan's features for PD/LGD inference.
+
+    Field names mirror the LendingClub schema (loan_amnt, annual_inc, etc.)
+    so the API contract matches the training data exactly. Required fields
+    are the strongest predictors; the rest carry sensible defaults that
+    represent a 'typical' loan, so a demo caller can ignore them.
+    """
+    # Required (highest-IV features)
+    loan_amnt: float = Field(gt=0, description="Principal in USD")
+    int_rate: float = Field(gt=0, lt=100, description="Annual percent, e.g. 10.5")
+    term: str = Field(default="36 months",
+                      description="'36 months' or '60 months'")
+    annual_inc: float = Field(gt=0, description="Annual income USD")
+    fico: int = Field(ge=300, le=850, description="FICO midpoint at origination")
+    dti: float = Field(ge=0, lt=100, description="Debt-to-income, percent")
+
+    # Optional with defaults (lower IV; defaults represent a typical loan)
+    installment: Optional[float] = Field(default=None,
+        description="Monthly payment USD; computed from amnt/rate/term if not given")
+    delinq_2yrs: int = Field(default=0)
+    inq_last_6mths: int = Field(default=0)
+    open_acc: int = Field(default=8)
+    pub_rec: int = Field(default=0)
+    revol_bal: float = Field(default=10_000)
+    revol_util: float = Field(default=40.0, description="Revolving utilization %")
+    total_acc: int = Field(default=20)
+    mort_acc: int = Field(default=0)
+    pub_rec_bankruptcies: int = Field(default=0)
+    emp_length: str = Field(default="5 years")
     home_ownership: str = Field(default="RENT")
+    verification_status: str = Field(default="Verified")
+    purpose: str = Field(default="debt_consolidation")
+    application_type: str = Field(default="Individual")
+
+    def to_model_dict(self) -> dict:
+        """Pack into a dict matching exactly what ScorecardPD/XGBoostPD expect."""
+        d = self.model_dump()
+        # Compute installment if missing: standard amortization formula.
+        if d.get("installment") is None:
+            r = self.int_rate / 100.0 / 12.0
+            n = 36 if "36" in self.term else 60
+            d["installment"] = (
+                self.loan_amnt * r / (1 - (1 + r) ** (-n)) if r > 0
+                else self.loan_amnt / n
+            )
+        return d
 
 
 class PDRequest(BaseModel):
