@@ -45,7 +45,7 @@ def post_risk_report(req: RiskReportRequest) -> RiskReportResponse:
     )
 
     # Portfolio credit
-    pc = simulate_portfolio_losses(pd=req.portfolio_pd, rho=req.portfolio_rho)
+    pc = simulate_portfolio_losses(pd_rate=req.portfolio_pd, rho=req.portfolio_rho)
     pc_resp = PortfolioCreditResponse(**pc)
 
     return RiskReportResponse(

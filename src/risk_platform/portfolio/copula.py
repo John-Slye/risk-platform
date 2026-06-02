@@ -17,7 +17,6 @@ from __future__ import annotations
 from typing import Literal, Optional
 
 import numpy as np
-import pandas as pd
 from scipy.stats import norm
 from scipy.stats import t as student_t
 
@@ -115,11 +114,11 @@ def simulate_portfolio_loss(
 
 # Backward-compat shim used by the API stub.
 def simulate_portfolio_losses(
-    pd: float = 0.05, rho: float = 0.15, n_obligors: int = 1_000,
+    pd_rate: float = 0.05, rho: float = 0.15, n_obligors: int = 1_000,
     n_simulations: int = 10_000, copula: str = "gaussian", df: int = 5,
 ) -> dict:
     out = simulate_portfolio_loss(
-        pds=pd, rho=rho, n_obligors=n_obligors,
+        pds=pd_rate, rho=rho, n_obligors=n_obligors,
         n_sims=n_simulations, copula=copula, df=df,
     )
     out.pop("losses", None)   # don't return giant array to the API
