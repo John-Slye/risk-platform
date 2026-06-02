@@ -18,6 +18,7 @@ def post_credit_var(req: PortfolioCreditRequest) -> PortfolioCreditResponse:
     """Simulated portfolio loss distribution under Gaussian or t-copula."""
     out = simulate_portfolio_losses(
         pd_rate=req.pd, rho=req.rho, n_obligors=req.n_obligors,
+        lgd=req.lgd, ead=req.ead,
         n_simulations=req.n_simulations, copula=req.copula, df=req.df,
     )
     return PortfolioCreditResponse(**out)

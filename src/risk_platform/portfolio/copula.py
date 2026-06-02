@@ -112,14 +112,16 @@ def simulate_portfolio_loss(
     }
 
 
-# Backward-compat shim used by the API stub.
+# Backward-compat shim used by the API endpoint.
 def simulate_portfolio_losses(
     pd_rate: float = 0.05, rho: float = 0.15, n_obligors: int = 1_000,
+    lgd: float = 0.92, ead: float = 15_000.0,
     n_simulations: int = 10_000, copula: str = "gaussian", df: int = 5,
 ) -> dict:
     out = simulate_portfolio_loss(
-        pds=pd_rate, rho=rho, n_obligors=n_obligors,
-        n_sims=n_simulations, copula=copula, df=df,
+        pds=pd_rate, eads=ead, lgds=lgd, rho=rho,
+        n_obligors=n_obligors, n_sims=n_simulations,
+        copula=copula, df=df,
     )
-    out.pop("losses", None)   # don't return giant array to the API
+    out.pop("losses", None)   # don't return the giant array to the API
     return out

@@ -119,11 +119,14 @@ class ExpectedLossResponse(BaseModel):
 
 # ---------- Portfolio credit ------------------------------------------------
 class PortfolioCreditRequest(BaseModel):
-    pd: float = Field(default=0.05, gt=0, lt=1)
-    rho: float = Field(default=0.15, gt=0, lt=1,
-                       description="Asset correlation")
+    pd: float = Field(default=0.20, gt=0, lt=1)
+    rho: float = Field(default=0.10, gt=0, lt=1,
+                       description="Asset correlation (Basel retail ~0.04, sub-prime ~0.10-0.15)")
     n_obligors: int = Field(default=1000, gt=0)
-    lgd: float = Field(default=0.45, ge=0, le=1)
+    lgd: float = Field(default=0.92, ge=0, le=1,
+                       description="Per-obligor LGD (unsecured consumer ~0.90)")
+    ead: float = Field(default=15_000.0, gt=0,
+                       description="Per-obligor exposure in USD")
     copula: Literal["gaussian", "t"] = "gaussian"
     df: int = Field(default=5, gt=2, description="t-copula degrees of freedom")
     n_simulations: int = Field(default=10_000, gt=0, le=1_000_000)
