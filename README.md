@@ -178,7 +178,7 @@ POT-GPD fit on the 5%-worst losses yields **ξ = 0.31** (heavy tail confirmed). 
 | 4 — Market risk integration| shipped | Project 1 VaR/ES engine ported in as `src/risk_platform/market` |
 | 5 — FastAPI deepening      | shipped | All endpoints real, Pydantic schemas, async-safe, OpenAPI at /docs |
 | 6 — Dashboard polish       | shipped | Plotly charts, portfolio CSV upload, sample portfolio bundled |
-| 7 — Production polish      | shipped | 37-test math suite, this README, methodology doc, demo video |
+| 7 — Production polish      | shipped | 37-test math suite, this README, methodology PDF, demo walkthrough doc |
 
 ---
 
