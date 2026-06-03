@@ -139,8 +139,42 @@ class PortfolioCreditResponse(BaseModel):
     credit_var_99: float
     credit_var_99_9: float
     economic_capital: float
+    tail_es_99_9: Optional[float] = None
     n_simulations: int
+    total_ead: Optional[float] = None
+    hhi: Optional[float] = None
+    histogram_bins: Optional[list[float]] = Field(
+        default=None, description="Bin edges of the simulated loss distribution"
+    )
+    histogram_counts: Optional[list[int]] = Field(
+        default=None, description="Count of simulations per histogram bin"
+    )
     model: str
+
+
+# Bulk portfolio EL endpoint -------------------------------------------------
+class PortfolioELRequest(BaseModel):
+    loans: list[LoanFeatures] = Field(
+        description="List of loans (each with all required + optional fields)"
+    )
+    pd_model: Literal["scorecard", "xgboost"] = "scorecard"
+
+
+class PortfolioELResponse(BaseModel):
+    n_loans: int
+    total_ead: float
+    total_el: float
+    total_rwa: float
+    weighted_pd: float
+    weighted_lgd: float
+    el_pct_of_ead: float
+    rwa_density: float
+    per_loan_pds: list[float]
+    per_loan_lgds: list[float]
+    per_loan_eads: list[float]
+    per_loan_els: list[float]
+    per_loan_rwas: list[float]
+    model_versions: dict
 
 
 # ---------- Combined risk report -------------------------------------------

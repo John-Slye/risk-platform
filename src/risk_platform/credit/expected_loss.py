@@ -72,12 +72,23 @@ def portfolio_expected_loss(
       - rwa_density    : total_rwa / total_ead (%)
       - top_risky      : 5 loans with highest EL
     """
+    n = len(loans)
     pds = np.asarray(pd_model.predict_proba(loans), dtype=float)
-    if pds.ndim == 2:                        # sklearn-style
+    if pds.ndim == 2:                          # sklearn-style 2-col output
         pds = pds[:, 1] if pds.shape[1] == 2 else pds.ravel()
+    # Stub models may return a scalar (CI / no pickle); broadcast to length n.
+    if pds.ndim == 0 or pds.size == 1:
+        pds = np.full(n, float(pds))
+    pds = np.nan_to_num(pds, nan=0.05)
+    pds = np.clip(pds, 1e-6, 1 - 1e-6)
 
     lgds = np.asarray(lgd_model.predict_batch(loans), dtype=float)
-    eads = loans[ead_col].astype(float).values
+    if lgds.ndim == 0 or lgds.size == 1:
+        lgds = np.full(n, float(lgds))
+    lgds = np.nan_to_num(lgds, nan=0.92)
+    lgds = np.clip(lgds, 0.0, 1.0)
+
+    eads = loans[ead_col].astype(float).fillna(0.0).values
     terms = np.where(loans[term_col].astype(str).str.contains("60"), 60.0, 36.0) / 12.0
 
     els = pds * lgds * eads

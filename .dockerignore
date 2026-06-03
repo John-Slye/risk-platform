@@ -8,6 +8,7 @@ notebooks/
 tests/
 docs/
 data/
+!data/sample/
 .DS_Store
 .vscode/
 .idea/
