@@ -13,6 +13,14 @@ from pydantic import BaseModel, Field
 
 
 # ---------- Market risk -----------------------------------------------------
+class MarketPortfolio(BaseModel):
+    """Custom market portfolio: per-asset ticker + weight."""
+    tickers: list[str] = Field(min_length=2, max_length=30,
+        description="Yahoo Finance tickers (e.g. ['SPY', 'AAPL', 'TLT'])")
+    weights: list[float] = Field(min_length=2, max_length=30,
+        description="Portfolio weights; will be normalized to sum to 1")
+
+
 class MarketVaRRequest(BaseModel):
     method: Literal[
         "historical", "parametric_normal", "parametric_t",
@@ -20,6 +28,8 @@ class MarketVaRRequest(BaseModel):
     ] = "historical"
     alpha: float = Field(default=0.05, gt=0, lt=1,
                          description="Tail probability (0.05 = 95% VaR)")
+    portfolio: Optional[MarketPortfolio] = Field(default=None,
+        description="Optional custom portfolio; default 9-asset book is used if omitted")
 
 
 class MarketVaRResponse(BaseModel):
@@ -31,6 +41,8 @@ class MarketVaRResponse(BaseModel):
 
 class MarketStressRequest(BaseModel):
     scenario: Literal["2020_covid", "2008_gfc", "2022_rates"] = "2020_covid"
+    portfolio: Optional[MarketPortfolio] = Field(default=None,
+        description="Optional custom portfolio; default 9-asset book is used if omitted")
 
 
 class MarketStressResponse(BaseModel):
@@ -118,7 +130,15 @@ class ExpectedLossResponse(BaseModel):
 
 
 # ---------- Portfolio credit ------------------------------------------------
+class Obligor(BaseModel):
+    """A single obligor in a heterogeneous credit portfolio."""
+    pd: float = Field(gt=0, lt=1)
+    lgd: float = Field(ge=0, le=1)
+    ead: float = Field(gt=0)
+
+
 class PortfolioCreditRequest(BaseModel):
+    # Homogeneous portfolio (used if `obligors` is None)
     pd: float = Field(default=0.20, gt=0, lt=1)
     rho: float = Field(default=0.10, gt=0, lt=1,
                        description="Asset correlation (Basel retail ~0.04, sub-prime ~0.10-0.15)")
@@ -130,6 +150,12 @@ class PortfolioCreditRequest(BaseModel):
     copula: Literal["gaussian", "t"] = "gaussian"
     df: int = Field(default=5, gt=2, description="t-copula degrees of freedom")
     n_simulations: int = Field(default=10_000, gt=0, le=1_000_000)
+
+    # Heterogeneous portfolio (per-obligor PD/LGD/EAD). When set, overrides
+    # the homogeneous fields above.
+    obligors: Optional[list[Obligor]] = Field(default=None,
+        description="Optional per-obligor list; if provided, the homogeneous "
+                    "pd/lgd/ead/n_obligors fields are ignored.")
 
 
 class PortfolioCreditResponse(BaseModel):
@@ -181,6 +207,8 @@ class PortfolioELResponse(BaseModel):
 class RiskReportRequest(BaseModel):
     market_method: str = "historical"
     market_alpha: float = 0.05
+    market_portfolio: Optional[MarketPortfolio] = Field(default=None,
+        description="Optional custom market portfolio; default 9-asset book used if omitted")
     loan: LoanFeatures
     portfolio_pd: float = 0.05
     portfolio_rho: float = 0.15

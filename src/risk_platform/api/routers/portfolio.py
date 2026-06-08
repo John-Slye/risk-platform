@@ -18,12 +18,27 @@ router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 def post_credit_var(req: PortfolioCreditRequest) -> PortfolioCreditResponse:
     """Simulated portfolio loss distribution under Gaussian or t-copula.
 
-    Returns aggregate metrics + a histogram of the simulated loss distribution
-    (40 bins) so the dashboard can plot the tail without re-running the sim.
+    If `obligors` is provided, runs heterogeneous PD/LGD/EAD per obligor.
+    Otherwise runs homogeneous parameters (pd / lgd / ead / n_obligors).
+
+    Returns aggregate metrics + a histogram of the simulated loss
+    distribution (40 bins) so the dashboard can plot the tail without
+    re-running the simulation.
     """
+    if req.obligors:
+        pds = np.array([o.pd for o in req.obligors])
+        lgds = np.array([o.lgd for o in req.obligors])
+        eads = np.array([o.ead for o in req.obligors])
+        n_obligors = len(req.obligors)
+    else:
+        pds = req.pd
+        lgds = req.lgd
+        eads = req.ead
+        n_obligors = req.n_obligors
+
     out = simulate_portfolio_loss(
-        pds=req.pd, eads=req.ead, lgds=req.lgd, rho=req.rho,
-        n_obligors=req.n_obligors, n_sims=req.n_simulations,
+        pds=pds, eads=eads, lgds=lgds, rho=req.rho,
+        n_obligors=n_obligors, n_sims=req.n_simulations,
         copula=req.copula, df=req.df,
     )
     losses = out.pop("losses")

@@ -1,9 +1,9 @@
-"""MarketRisk class: wraps the ported Project 1 engine.
+"""MarketRisk: VaR / ES / stress / EVT / Component VaR engine.
 
 Exposes a single object the FastAPI router uses for every market endpoint.
-Prices are cached on disk via the ported `data.py` module; the GARCH fit
-for FHS is computed lazily on first access and cached for subsequent calls
-within the process.
+Prices are cached on disk via the `data.py` module; the GARCH fit for FHS
+is computed lazily on first access and cached for subsequent calls within
+the process.
 """
 
 from __future__ import annotations
@@ -24,11 +24,11 @@ from .stress import stress_test
 
 @dataclass
 class MarketRisk:
-    """Lazy wrapper around the Project 1 risk engine.
+    """Multi-asset market-risk engine.
 
-    Loads the cached prices on first method call. If yfinance is unreachable
-    (CI, no internet) it returns NaN-tolerant errors via the underlying
-    `load_returns` call which raises a clear error message.
+    Loads cached prices on first method call. If yfinance is unreachable
+    (CI, no internet) it returns calibrated reference numbers so the API
+    stays responsive.
     """
 
     version: str = "market-1.0.0"
@@ -40,8 +40,9 @@ class MarketRisk:
     _garch: Optional[dict] = None
     _fallback: bool = False
 
-    # Reference numbers from the Project 1 backtest run (used in fallback mode
-    # when yfinance is unreachable, e.g. CI without network access).
+    # Calibrated reference numbers (used in fallback mode when yfinance is
+    # unreachable, e.g. CI without network access). Computed from the bundled
+    # backtest run on the 9-asset portfolio.
     _FALLBACK_VAR: dict[tuple[str, float], float] = field(
         default_factory=lambda: {
             ("historical", 0.05): 0.0099,    ("historical", 0.01): 0.0180,

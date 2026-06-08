@@ -1,8 +1,4 @@
-"""Unified market + credit risk report: /risk_report.
-
-Reuses the credit router's loaded scorecard/lgd singletons so the trained
-pickles aren't re-loaded.
-"""
+"""Unified market + credit risk report: /risk_report."""
 
 from __future__ import annotations
 
@@ -15,7 +11,7 @@ from risk_platform.api.schemas import (
 )
 from risk_platform.api.routers.credit import _lgd, _scorecard
 from risk_platform.credit import basel_rwa, expected_loss
-from risk_platform.market import MarketRisk
+from risk_platform.market import get_market_risk
 from risk_platform.portfolio import simulate_portfolio_losses
 
 
@@ -25,8 +21,15 @@ router = APIRouter(prefix="", tags=["report"])
 @router.post("/risk_report", response_model=RiskReportResponse)
 def post_risk_report(req: RiskReportRequest) -> RiskReportResponse:
     """Run market VaR + loan EL + portfolio Credit VaR and return all three."""
-    # Market
-    mr = MarketRisk().var(req.market_method, req.market_alpha)
+    # Market - use uploaded portfolio if provided, otherwise default
+    if req.market_portfolio:
+        engine = get_market_risk(
+            tickers=req.market_portfolio.tickers,
+            weights=req.market_portfolio.weights,
+        )
+    else:
+        engine = get_market_risk()
+    mr = engine.var(req.market_method, req.market_alpha)
     market_resp = MarketVaRResponse(**mr)
 
     # Credit (loan-level) using shared singletons

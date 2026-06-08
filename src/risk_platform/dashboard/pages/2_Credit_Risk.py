@@ -14,7 +14,29 @@ import streamlit as st
 API_URL = os.environ.get("API_URL", "http://localhost:8000")
 
 st.title("Credit Risk - Loan-Level PD / LGD / EL")
-st.caption("Phase 1 ships real PD models (WOE scorecard + XGBoost) trained on LendingClub.")
+
+st.markdown(
+    """
+Score a single loan through the trained credit models. Get back Probability
+of Default, Loss Given Default, Expected Loss, and Basel IRB Risk-Weighted
+Assets.
+
+**Models available:**
+- *Scorecard (WOE/IV + Logistic Regression)* - regulator-friendly,
+  decomposable into per-feature point contributions.
+- *XGBoost benchmark* - higher AUC, used as a challenger model.
+
+Both were trained on **LendingClub 2014-2016 vintages (891,754 loans)** with
+out-of-time validation on 2018.
+
+**Input:** enter the loan's features below. Required fields are the
+highest-IV ones (loan amount, interest rate, term, annual income, FICO, DTI);
+the rest carry sensible defaults that you can override in the optional
+section.
+
+For aggregating a whole loan book, see the **Portfolio Upload** page.
+"""
+)
 
 with st.form("loan_form"):
     st.subheader("Required (highest-IV features)")

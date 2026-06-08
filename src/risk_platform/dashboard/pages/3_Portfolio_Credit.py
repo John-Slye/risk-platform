@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 import requests
 import streamlit as st
@@ -13,7 +14,60 @@ import streamlit as st
 API_URL = os.environ.get("API_URL", "http://localhost:8000")
 
 st.title("Portfolio Credit Risk - Credit VaR & Economic Capital")
-st.caption("Vasicek single-factor + Gaussian / Student-t copula Monte Carlo.")
+
+st.markdown(
+    """
+Move from loan-by-loan expected loss to a full **portfolio loss
+distribution**. Computes Credit VaR (the loss exceeded with probability
+alpha) and Economic Capital (Credit VaR - Expected Loss) - the unexpected-
+loss reserve a bank holds equity against.
+
+**Method:** Vasicek single-factor (ASRF) model - the analytical foundation
+of Basel IRB - paired with Gaussian / Student-t copula Monte Carlo for the
+finite-sample loss distribution. 100k+ simulated portfolio paths per run.
+
+**Input:** set the parametric inputs (PD, LGD, asset correlation, EAD,
+number of obligors, copula choice). For 2014-2018 LendingClub-style
+sub-prime parameters: PD ~20%, LGD ~92%, rho ~0.10.
+
+**Try the comparison:** run once with Gaussian, then again with Student-t
+(df=5). The 99.9% VaR and Economic Capital typically rise 15-30% under the
+t-copula. That gap is the post-2008 modeling story in one chart.
+
+For heterogeneous portfolios (one PD per obligor from a CSV), use the
+Portfolio Upload page.
+"""
+)
+
+st.sidebar.subheader("Portfolio source")
+mode = st.sidebar.radio(
+    "Data",
+    ["Homogeneous (parameters)", "Upload obligor CSV (pd,lgd,ead)"],
+    label_visibility="collapsed",
+)
+
+obligors = None
+if mode.startswith("Upload"):
+    upload = st.sidebar.file_uploader(
+        "CSV with `pd`, `lgd`, `ead` columns", type=["csv"],
+        help="One row per obligor. PDs must be in (0, 1); LGDs in [0, 1]; "
+             "EADs in USD."
+    )
+    if upload is not None:
+        try:
+            df = pd.read_csv(upload)
+            missing = {"pd", "lgd", "ead"} - set(df.columns)
+            if missing:
+                st.sidebar.error(f"CSV missing columns: {sorted(missing)}")
+            else:
+                df = df.dropna(subset=["pd", "lgd", "ead"])
+                obligors = df[["pd", "lgd", "ead"]].to_dict(orient="records")
+                st.sidebar.success(f"{len(obligors)} obligors loaded.")
+        except Exception as exc:
+            st.sidebar.error(f"Failed to parse CSV: {exc}")
+    else:
+        st.sidebar.info("Awaiting CSV. Falls back to homogeneous parameters "
+                        "until you upload.")
 
 with st.form("port_form"):
     c1, c2, c3 = st.columns(3)
@@ -32,6 +86,10 @@ with st.form("port_form"):
 if submitted:
     body = dict(pd=pd_rate, rho=rho, n_obligors=n_obligors, lgd=lgd, ead=ead,
                 copula=copula, df=df, n_simulations=n_sims)
+    if obligors:
+        body["obligors"] = obligors
+        st.info(f"Using {len(obligors)} uploaded obligors; the homogeneous "
+                f"PD/LGD/EAD/n_obligors above are ignored.")
     try:
         r = requests.post(f"{API_URL}/portfolio/credit_var", json=body, timeout=30)
         r.raise_for_status()

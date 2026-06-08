@@ -21,7 +21,26 @@ API_URL = os.environ.get("API_URL", "http://localhost:8000")
 SAMPLE_CSV = Path(__file__).resolve().parents[4] / "data" / "sample" / "loan_portfolio.csv"
 
 st.title("Portfolio Upload - Aggregate Expected Loss")
-st.caption("Drag-drop a CSV of loans, choose a PD model, see per-loan + portfolio metrics.")
+
+st.markdown(
+    """
+Drop a CSV of loans, choose a PD model, and get back:
+
+- Aggregate metrics: total Expected Loss, total Basel RWA, EAD-weighted PD,
+  EAD-weighted LGD
+- The 10 riskiest loans by EL
+- A Plotly scatter (PD vs LGD, size = EAD, color = EL)
+- A downloadable per-loan results CSV (PD, LGD, EAD, EL, RWA per loan)
+
+**CSV columns required:** `loan_amnt`, `int_rate`, `term`, `annual_inc`,
+`fico`, `dti`.
+**Optional (sensible defaults applied if missing):** `delinq_2yrs`,
+`inq_last_6mths`, `open_acc`, `revol_util`, `mort_acc`, `emp_length`,
+`home_ownership`, `verification_status`, `purpose`.
+
+Use the sample CSV below if you don't have your own.
+"""
+)
 
 # ---- Sample CSV download --------------------------------------------------
 if SAMPLE_CSV.exists():

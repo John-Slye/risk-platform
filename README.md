@@ -12,8 +12,7 @@ The promise: `docker compose up` and you can click through a real risk
 platform in your browser in 90 seconds.
 
 > Built end-to-end as a portfolio project: no pre-built VaR or credit-risk
-> libraries, every model from scratch. Market risk engine ported in from
-> the standalone [portfolio-var-framework](https://github.com/John-Slye/portfolio_var_project).
+> libraries, every model implemented from scratch.
 
 ---
 
@@ -83,7 +82,7 @@ stub responses (so the platform is always demoable, even on a clean clone).
 |  Risk     |   |  PD (scorecard)   |   |  Vasicek ASRF    |
 |  Project1 |   |  PD (XGBoost)     |   |  Gaussian copula |
 |  engine,  |   |  LGD (XGB regr.)  |   |  Student-t copula|
-|  ported   |   |  EL + Basel IRB   |   |  Credit VaR / EC |
+|  5-method |   |  EL + Basel IRB   |   |  Credit VaR / EC |
 +-----------+   +-------------------+   +------------------+
                             |
                             v
@@ -175,7 +174,7 @@ POT-GPD fit on the 5%-worst losses yields **ξ = 0.31** (heavy tail confirmed). 
 | 1 — PD models              | shipped | WOE/IV scorecard + XGBoost, side-by-side validation report |
 | 2 — LGD + Expected Loss    | shipped | LGD regressor, EL = PD·LGD·EAD, Basel IRB RWA, portfolio aggregator |
 | 3 — Portfolio credit       | shipped | Vasicek ASRF + Gaussian/t copula MC + Credit VaR + Economic Capital |
-| 4 — Market risk integration| shipped | Project 1 VaR/ES engine ported in as `src/risk_platform/market` |
+| 4 — Market risk integration| shipped | VaR/ES engine wired in as `src/risk_platform/market` |
 | 5 — FastAPI deepening      | shipped | All endpoints real, Pydantic schemas, async-safe, OpenAPI at /docs |
 | 6 — Dashboard polish       | shipped | Plotly charts, portfolio CSV upload, sample portfolio bundled |
 | 7 — Production polish      | shipped | 37-test math suite, this README, methodology PDF, demo walkthrough doc |
@@ -218,7 +217,7 @@ risk-platform/
 │   │                           # 4_Stress_Testing, 5_Model_Cards, 6_Portfolio_Upload
 │   ├── credit/                 # PD scorecard + XGBoost, LGD, EL, Basel IRB
 │   ├── portfolio/              # Vasicek ASRF, Gaussian/t copula MC, Credit VaR
-│   ├── market/                 # ported from Project 1 (VaR, ES, FHS, EVT, stress)
+│   ├── market/                 # VaR, ES, FHS, EVT, stress, Component VaR
 │   ├── data/                   # LendingClub loader + processed parquet
 │   └── core/                   # shared utilities
 ├── scripts/                    # train_pd_scorecard, train_pd_xgboost, train_lgd_model,

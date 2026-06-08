@@ -1,6 +1,6 @@
 # Interview Prep: Integrated Credit & Market Risk Analytics Platform
 
-A study sheet for credit-risk, quant-developer, and risk-technology interviews. Mirrors the Project 1 prep doc but is credit-focused. Read the platform's README first; this assumes you remember the numbers.
+A study sheet for credit-risk, quant-developer, and risk-technology interviews. Read the platform's README first; this assumes you remember the numbers.
 
 ## How to use this doc
 
@@ -10,7 +10,7 @@ Practice every answer **out loud**, under 60 seconds, without reading. The numbe
 
 ## 1. The 90-second elevator pitch
 
-> "I built a production-style risk analytics platform that integrates credit risk and market risk in one system. The credit stack has two PD models (a logistic-regression scorecard with WOE/IV feature engineering, and an XGBoost benchmark), an LGD regressor, Basel IRB Expected Loss, and portfolio Credit VaR via Vasicek ASRF and Gaussian/t-copula Monte Carlo. The market stack is the standalone VaR project I built first, refactored as a platform module. Everything sits behind a FastAPI backend with a Streamlit dashboard, all containerized with Docker Compose. The headline credit finding is that the Student-t copula adds 28% to Economic Capital versus Gaussian on a sub-prime consumer book — the central post-2008 modeling story. The headline market finding is that Filtered Historical Simulation with GARCH(1,1) is the only method out of five that passes both Kupiec and Christoffersen backtests at 95% and 99%. The platform itself is `docker compose up` away from a clickable demo."
+> "I built a production-style risk analytics platform that integrates credit risk and market risk in one system. The credit stack has two PD models (a logistic-regression scorecard with WOE/IV feature engineering, and an XGBoost benchmark), an LGD regressor, Basel IRB Expected Loss, and portfolio Credit VaR via Vasicek ASRF and Gaussian/t-copula Monte Carlo. The market stack implements five VaR methodologies plus EVT — Historical, Parametric Normal and Student-t, Monte Carlo with multivariate Normal and t, and Filtered Historical Simulation with GARCH(1,1) residuals — all from scratch, no pre-built libraries. Everything sits behind a FastAPI backend with a Streamlit dashboard, all containerized with Docker Compose. The headline credit finding is that the Student-t copula adds 28% to Economic Capital versus Gaussian on a sub-prime consumer book — the central post-2008 modeling story. The headline market finding is that Filtered Historical Simulation with GARCH(1,1) is the only method out of five that passes both Kupiec and Christoffersen backtests at 95% and 99%. The platform itself is `docker compose up` away from a clickable demo."
 
 Memorize the structure: scope, two stacks, headline credit finding, headline market finding, demo-able.
 

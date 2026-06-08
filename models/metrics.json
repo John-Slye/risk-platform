@@ -1,0 +1,79 @@
+{
+  "scorecard_pd": {
+    "display_name": "Scorecard (WOE / IV + Logistic)",
+    "type": "Logistic regression on Weight-of-Evidence transformed features",
+    "trained_on": "LendingClub 2014-2016 vintages, 891,754 loans",
+    "features_kept": "12 of 21 (IV >= 0.02)",
+    "auc_train": 0.7167,
+    "auc_val": 0.7008,
+    "auc_test": 0.6932,
+    "ks_test": 0.2839,
+    "gini_test": 0.3864,
+    "brier_test": 0.1283,
+    "psi_train_to_test": 0.030,
+    "psi_interpretation": "stable",
+    "top_features_by_iv": [
+      {"feature": "int_rate", "iv": 0.515},
+      {"feature": "term", "iv": 0.209},
+      {"feature": "fico", "iv": 0.119},
+      {"feature": "dti", "iv": 0.077},
+      {"feature": "verification_status", "iv": 0.060}
+    ],
+    "version": "scorecard-0.1.0",
+    "last_refresh": "2026-06"
+  },
+  "xgboost_pd": {
+    "display_name": "XGBoost PD",
+    "type": "Gradient-boosted trees with native categorical handling",
+    "trained_on": "LendingClub 2014-2016 vintages, 891,754 loans",
+    "best_iteration": 485,
+    "auc_train": 0.7419,
+    "auc_val": 0.7158,
+    "auc_test": 0.7130,
+    "ks_test": 0.3139,
+    "gini_test": 0.4260,
+    "brier_test": 0.1258,
+    "vs_scorecard_auc_delta": 0.020,
+    "top_features_by_gain": ["term", "int_rate", "mort_acc", "home_ownership", "fico"],
+    "version": "xgboost-0.1.0",
+    "last_refresh": "2026-06"
+  },
+  "lgd_model": {
+    "display_name": "LGD Regressor",
+    "type": "XGBoost regression on realized LGD for defaulted loans",
+    "trained_on": "LendingClub defaulted loans 2014-2016, 185,218 records",
+    "mae_train": 0.064,
+    "mae_val": 0.067,
+    "mae_test": 0.076,
+    "mean_predicted": 0.92,
+    "mean_realized_train": 0.92,
+    "mean_realized_test": 0.968,
+    "best_iteration": 21,
+    "note": "Near-zero R-squared is structural for unsecured consumer LGD; mean is well-calibrated.",
+    "version": "lgd-0.1.0",
+    "last_refresh": "2026-06"
+  },
+  "market_risk": {
+    "display_name": "Market Risk Engine",
+    "type": "5-method VaR/ES + EVT + GARCH-filtered Historical Simulation",
+    "trained_on": "9-asset multi-asset portfolio, 2014-2026 daily returns from yfinance",
+    "n_observations": 3118,
+    "backtest_summary": {
+      "fhs_garch": {"kupiec_p_99": 0.547, "christoffersen_cc_p_99": 0.076, "exc_rate_99": 0.0113},
+      "historical": {"kupiec_p_99": 0.142, "christoffersen_cc_p_99": 0.001, "exc_rate_99": 0.0130},
+      "parametric_normal": {"kupiec_p_99": 0.000, "christoffersen_cc_p_99": 0.000, "exc_rate_99": 0.0241}
+    },
+    "evt_xi": 0.314,
+    "version": "market-1.0.0",
+    "last_refresh": "2026-06"
+  },
+  "portfolio_credit": {
+    "display_name": "Portfolio Credit Risk Engine",
+    "type": "Vasicek ASRF (analytical) + Gaussian/Student-t copula Monte Carlo",
+    "trained_on": "n/a (parametric)",
+    "consistency_check": "Vasicek analytical vs Gaussian MC agree to within 1.6% at the 99.9% VaR",
+    "headline_finding": "Student-t copula adds 28% to Economic Capital vs Gaussian on a sub-prime book under identical inputs",
+    "version": "vasicek-asrf-0.1.0 / copula-0.1.0",
+    "last_refresh": "2026-06"
+  }
+}

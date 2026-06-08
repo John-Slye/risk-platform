@@ -22,11 +22,12 @@ data/*.csv
 data/*.parquet
 *.zip
 
-# Model artifacts
+# Model artifacts (heavy binaries — retrain locally)
 models/*.pkl
 models/*.joblib
 models/*.cbm
-models/*.json
+# `models/metrics.json` IS tracked: small file, bundles validation metrics
+# for the Model Cards dashboard page.
 
 # Reports / large outputs
 report.pdf

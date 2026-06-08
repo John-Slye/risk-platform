@@ -3,16 +3,38 @@
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
 
 import plotly.graph_objects as go
 import requests
 import streamlit as st
 
+# Import shared widget from the dashboard package root
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from _portfolio_widget import market_portfolio_picker  # noqa: E402
+
 
 API_URL = os.environ.get("API_URL", "http://localhost:8000")
 
 st.title("Market Risk - VaR & Expected Shortfall")
-st.caption("Powered by the Project 1 engine (5 VaR methods + EVT) ported in as `risk_platform.market`.")
+
+st.markdown(
+    """
+Compute 1-day Value at Risk and Expected Shortfall on a multi-asset
+portfolio using five methodologies plus Extreme Value Theory.
+
+Choose a portfolio in the sidebar: the bundled 9-asset book (default) or
+upload your own `ticker,weight` CSV. First call on a custom portfolio
+takes ~30-60 sec (yfinance download + GARCH fit); subsequent calls on the
+same portfolio are instant thanks to the in-process cache.
+
+Pick a method and confidence below to compute VaR + ES. Use **Compute all
+methods** to plot all five side-by-side and see the fat-tail gap directly.
+"""
+)
+
+portfolio = market_portfolio_picker()
 
 METHODS = ["historical", "parametric_normal", "parametric_t",
            "monte_carlo_normal", "monte_carlo_t", "fhs"]
@@ -24,11 +46,19 @@ with col2:
     confidence = st.selectbox("Confidence", ["95%", "99%"])
     alpha = 0.05 if confidence == "95%" else 0.01
 
+def _body(method: str, alpha: float) -> dict:
+    body = {"method": method, "alpha": alpha}
+    if portfolio is not None:
+        body["portfolio"] = portfolio
+    return body
+
+
 if st.button("Compute VaR + ES"):
     try:
-        body = {"method": method, "alpha": alpha}
-        var = requests.post(f"{API_URL}/market/var", json=body, timeout=10).json()
-        es  = requests.post(f"{API_URL}/market/es",  json=body, timeout=10).json()
+        var = requests.post(f"{API_URL}/market/var",
+                            json=_body(method, alpha), timeout=90).json()
+        es  = requests.post(f"{API_URL}/market/es",
+                            json=_body(method, alpha), timeout=90).json()
         c1, c2 = st.columns(2)
         c1.metric(f"{confidence} 1-day VaR", f"{var['VaR']*100:.2f}%")
         c2.metric(f"{confidence} 1-day ES",  f"{es['VaR']*100:.2f}%")
@@ -46,7 +76,7 @@ if st.button("Compute all methods at " + confidence):
     for i, m in enumerate(METHODS, 1):
         try:
             v = requests.post(f"{API_URL}/market/var",
-                              json={"method": m, "alpha": alpha}, timeout=15).json()
+                              json=_body(m, alpha), timeout=120).json()
             rows.append({"method": m, "VaR": v["VaR"] * 100})
         except Exception as exc:
             st.warning(f"{m}: {exc}")
@@ -64,19 +94,3 @@ if st.button("Compute all methods at " + confidence):
             height=440,
         )
         st.plotly_chart(fig, use_container_width=True)
-
-st.divider()
-st.subheader("Historical stress scenarios")
-
-scenario = st.selectbox("Scenario", ["2020_covid", "2008_gfc", "2022_rates"])
-if st.button("Run stress scenario"):
-    try:
-        out = requests.post(f"{API_URL}/market/stress",
-                            json={"scenario": scenario}, timeout=15).json()
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Cumulative loss", f"{out['cum_loss']*100:.1f}%")
-        c2.metric("Worst day",       f"{out['worst_day']*100:.2f}%")
-        c3.metric("Ann. vol",        f"{out['ann_vol']*100:.1f}%")
-        st.caption(f"model: `{out['model']}`")
-    except Exception as exc:
-        st.error(f"Request failed: {exc}")
