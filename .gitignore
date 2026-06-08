@@ -40,3 +40,4 @@ dist/
 
 # Docker
 *.dockerignore.tmp
+INTERVIEW_PREP.md
